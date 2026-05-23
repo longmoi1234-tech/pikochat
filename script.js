@@ -4,6 +4,8 @@ const chatPanel = document.getElementById('chatPanel');
 const openChatBtn = document.getElementById('openChatBtn');
 const backToLaunchBtn = document.getElementById('backToLaunchBtn');
 const launchCategoryGrid = document.getElementById('launchCategoryGrid');
+const categoryPrevBtn = document.getElementById('categoryPrevBtn');
+const categoryNextBtn = document.getElementById('categoryNextBtn');
 const launchQuestionPanel = document.getElementById('launchQuestionPanel');
 const chatWindow = document.getElementById('chatWindow');
 const chatForm = document.getElementById('chatForm');
@@ -11,6 +13,32 @@ const userInput = document.getElementById('userInput');
 const emptyState = document.getElementById('emptyState');
 const micBtn = document.getElementById('micBtn');
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const stopWords = new Set([
+  'a', 'an', 'and', 'are', 'can', 'do', 'does', 'for', 'how', 'i', 'in',
+  'is', 'it', 'my', 'of', 'on', 'or', 'should', 'the', 'to', 'what',
+  'when', 'where', 'which', 'who', 'why', 'with',
+]);
+
+const categoryIcons = {
+  Billing: 'receipt',
+  'Cafe Management': 'cup',
+  'Company Settings': 'building',
+  'Data and Security': 'shield',
+  'Display Board': 'screen',
+  Expenses: 'wallet',
+  'General FAQs': 'spark',
+  'Getting Started': 'rocket',
+  Inventory: 'box',
+  'Orders': 'cart',
+  'Ownership and Manager': 'users',
+  Payments: 'card',
+  'POS and Cafe Management': 'cup',
+  Printing: 'printer',
+  Receipts: 'receipt',
+  'Reports and Summary': 'chart',
+  Troubleshooting: 'tool',
+  'Users and Permissions': 'users',
+};
 
 let recognition = null;
 let isListening = false;
@@ -37,6 +65,17 @@ backToLaunchBtn.addEventListener('click', () => {
   launchScreen.classList.remove('is-hidden');
   openChatBtn.focus();
 });
+
+categoryPrevBtn.addEventListener('click', () => {
+  scrollLaunchCategories(-1);
+});
+
+categoryNextBtn.addEventListener('click', () => {
+  scrollLaunchCategories(1);
+});
+
+launchCategoryGrid.addEventListener('scroll', updateCategoryArrowState);
+window.addEventListener('resize', updateCategoryArrowState);
 
 chatForm.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -223,15 +262,11 @@ function buildApiUrl(base, path) {
 }
 
 function getLocalChatbotAnswer(query, faq) {
-  const normalizedQuery = query.toLowerCase();
   let bestMatch = null;
   let highestScore = 0;
 
   faq.forEach((item) => {
-    const keywords = item.keywords || [];
-    const score = keywords.reduce((total, keyword) => (
-      normalizedQuery.includes(String(keyword).toLowerCase()) ? total + 1 : total
-    ), 0);
+    const score = scoreFaqItem(query, item);
 
     if (score > highestScore) {
       highestScore = score;
@@ -252,42 +287,151 @@ Try asking:
 - Cafe management features`;
 }
 
+function normalizeText(text) {
+  return String(text).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function stemToken(token) {
+  if (token.length > 4 && token.endsWith('ies')) {
+    return `${token.slice(0, -3)}y`;
+  }
+
+  if (token.length > 3 && token.endsWith('es')) {
+    return token.slice(0, -2);
+  }
+
+  if (token.length > 3 && token.endsWith('s')) {
+    return token.slice(0, -1);
+  }
+
+  return token;
+}
+
+function getSearchTerms(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) {
+    return new Set();
+  }
+
+  return new Set(normalized.split(' ').filter((token) => !stopWords.has(token)).map(stemToken));
+}
+
+function getIntersectionSize(firstSet, secondSet) {
+  let count = 0;
+  firstSet.forEach((value) => {
+    if (secondSet.has(value)) {
+      count += 1;
+    }
+  });
+
+  return count;
+}
+
+function isSubset(subset, set) {
+  for (const value of subset) {
+    if (!set.has(value)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function scoreFaqItem(query, item) {
+  const normalizedQuery = normalizeText(query);
+  const queryTerms = getSearchTerms(query);
+  let score = 0;
+
+  const searchableFields = [
+    [item.question || '', 6],
+    [(item.keywords || []).join(' '), 2],
+    [item.category || '', 1],
+  ];
+  const questionTerms = getSearchTerms(item.question || '');
+  const itemTerms = new Set();
+
+  searchableFields.forEach(([text, weight]) => {
+    const terms = getSearchTerms(text);
+    terms.forEach((term) => itemTerms.add(term));
+    score += getIntersectionSize(queryTerms, terms) * weight;
+  });
+
+  if (queryTerms.size && isSubset(queryTerms, itemTerms)) {
+    score += 20;
+  }
+
+  if (queryTerms.size && isSubset(queryTerms, questionTerms)) {
+    score += 12;
+  }
+
+  (item.keywords || []).forEach((keyword) => {
+    const normalizedKeyword = normalizeText(keyword);
+    if (!normalizedKeyword) {
+      return;
+    }
+
+    const keywordTerms = getSearchTerms(keyword);
+    if (normalizedQuery.includes(normalizedKeyword)) {
+      score += (keywordTerms.size <= 1 ? 6 : 15) + keywordTerms.size;
+    } else if (keywordTerms.size && isSubset(keywordTerms, queryTerms)) {
+      score += 10 + keywordTerms.size;
+    }
+  });
+
+  const normalizedQuestion = normalizeText(item.question || '');
+  if (normalizedQuestion && normalizedQuery.includes(normalizedQuestion)) {
+    score += 25;
+  }
+
+  return score;
+}
+
 function renderLaunchCategories(faq) {
   if (!faq.length) {
     launchCategoryGrid.innerHTML = '';
     launchQuestionPanel.innerHTML = '<p class="launch-empty">No categories are available yet.</p>';
+    updateCategoryArrowState();
     return;
   }
 
   const categories = groupFaqByCategory(faq);
+  activeLaunchCategory = activeLaunchCategory || Object.keys(categories)[0] || '';
   launchCategoryGrid.innerHTML = '';
   launchQuestionPanel.innerHTML = '';
 
   Object.entries(categories).forEach(([category, questions]) => {
-    const group = document.createElement('div');
-    group.className = 'launch-category-group';
-
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'launch-category-tile';
+    button.className = 'launch-category-chip';
     button.dataset.category = category;
-    button.setAttribute('aria-expanded', 'false');
-    button.innerHTML = `
-      <span class="launch-plus" aria-hidden="true">+</span>
-      <span class="launch-category-name">${category}</span>
-    `;
+    button.setAttribute('aria-pressed', String(category === activeLaunchCategory));
+
+    const categoryIcon = document.createElement('span');
+    categoryIcon.className = `launch-category-icon icon-${categoryIcons[category] || 'spark'}`;
+    categoryIcon.setAttribute('aria-hidden', 'true');
+
+    const categoryName = document.createElement('span');
+    categoryName.className = 'launch-category-name';
+    categoryName.textContent = category;
+
+    const categoryCount = document.createElement('span');
+    categoryCount.className = 'launch-category-count';
+    categoryCount.setAttribute('aria-label', `${questions.length} questions`);
+    categoryCount.textContent = questions.length;
+
+    button.append(categoryIcon, categoryName, categoryCount);
 
     button.addEventListener('click', () => {
-      activeLaunchCategory = activeLaunchCategory === category ? '' : category;
+      activeLaunchCategory = category;
       updateLaunchCategoryState(categories);
+      button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     });
 
-    const questionList = document.createElement('div');
-    questionList.className = 'launch-category-questions';
-
-    group.append(button, questionList);
-    launchCategoryGrid.appendChild(group);
+    launchCategoryGrid.appendChild(button);
   });
+
+  updateLaunchCategoryState(categories);
+  updateCategoryArrowState();
 }
 
 function groupFaqByCategory(faq) {
@@ -303,37 +447,98 @@ function groupFaqByCategory(faq) {
 }
 
 function updateLaunchCategoryState(categories) {
-  Array.from(launchCategoryGrid.children).forEach((group) => {
-    const button = group.querySelector('.launch-category-tile');
-    const questionList = group.querySelector('.launch-category-questions');
-    const categoryName = button.dataset.category;
-    const isActive = categoryName === activeLaunchCategory;
-
+  Array.from(launchCategoryGrid.children).forEach((button) => {
+    const isActive = button.dataset.category === activeLaunchCategory;
     button.classList.toggle('is-active', isActive);
-    button.setAttribute('aria-expanded', String(isActive));
-    button.querySelector('.launch-plus').textContent = isActive ? '-' : '+';
+    button.setAttribute('aria-pressed', String(isActive));
+  });
 
-    questionList.innerHTML = '';
+  const questions = categories[activeLaunchCategory] || [];
+  launchQuestionPanel.innerHTML = '';
 
-    if (!isActive) {
-      return;
+  if (!questions.length) {
+    launchQuestionPanel.innerHTML = '<p class="launch-empty">Select a category to view questions.</p>';
+    return;
+  }
+
+  const heading = document.createElement('div');
+  heading.className = 'launch-question-heading';
+
+  const headingTitle = document.createElement('span');
+  headingTitle.textContent = activeLaunchCategory;
+
+  const headingCount = document.createElement('small');
+  headingCount.textContent = `${questions.length} ${questions.length === 1 ? 'question' : 'questions'}`;
+
+  heading.append(headingTitle, headingCount);
+  launchQuestionPanel.appendChild(heading);
+
+  const questionList = document.createElement('div');
+  questionList.className = 'launch-category-questions';
+
+  questions.forEach((item, index) => {
+    const questionItem = document.createElement('div');
+    questionItem.className = 'launch-question-item';
+    if (index === 0) {
+      questionItem.classList.add('is-open');
     }
 
-    const questions = categories[categoryName] || [];
-    questions.forEach((item) => {
-      const details = document.createElement('details');
-      details.className = 'launch-question-item';
+    const questionStep = document.createElement('span');
+    questionStep.className = 'launch-question-step';
+    questionStep.textContent = index + 1;
 
-      const summary = document.createElement('summary');
-      summary.textContent = item.question;
+    const questionButton = document.createElement('button');
+    questionButton.className = 'launch-question-toggle';
+    questionButton.type = 'button';
+    questionButton.setAttribute('aria-expanded', String(index === 0));
 
-      const answer = document.createElement('p');
-      answer.textContent = item.answer;
+    const questionText = document.createElement('span');
+    questionText.className = 'launch-question-text';
+    questionText.textContent = item.question || 'Question';
 
-      details.append(summary, answer);
-      questionList.appendChild(details);
+    const questionChevron = document.createElement('span');
+    questionChevron.className = 'launch-question-chevron';
+    questionChevron.setAttribute('aria-hidden', 'true');
+
+    questionButton.append(questionText, questionChevron);
+
+    const answer = document.createElement('div');
+    answer.className = 'launch-question-answer';
+    answer.hidden = index !== 0;
+    answer.textContent = item.answer || 'Answer is not available for this question yet.';
+
+    questionButton.addEventListener('click', () => {
+      const isOpen = questionItem.classList.toggle('is-open');
+      questionButton.setAttribute('aria-expanded', String(isOpen));
+      answer.hidden = !isOpen;
     });
+
+    const questionBody = document.createElement('div');
+    questionBody.className = 'launch-question-body';
+    questionBody.append(questionButton, answer);
+
+    questionItem.append(questionStep, questionBody);
+    questionList.appendChild(questionItem);
   });
+
+  launchQuestionPanel.appendChild(questionList);
+}
+
+function scrollLaunchCategories(direction) {
+  const scrollAmount = Math.max(180, Math.floor(launchCategoryGrid.clientWidth * 0.75));
+  launchCategoryGrid.scrollBy({
+    left: scrollAmount * direction,
+    behavior: 'smooth',
+  });
+}
+
+function updateCategoryArrowState() {
+  const maxScrollLeft = launchCategoryGrid.scrollWidth - launchCategoryGrid.clientWidth;
+  const hasOverflow = maxScrollLeft > 1;
+  const currentScrollLeft = launchCategoryGrid.scrollLeft;
+
+  categoryPrevBtn.disabled = !hasOverflow || currentScrollLeft <= 1;
+  categoryNextBtn.disabled = !hasOverflow || currentScrollLeft >= maxScrollLeft - 1;
 }
 
 function getSpeechErrorMessage(error) {
