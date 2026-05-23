@@ -75,7 +75,7 @@ body {
 .launch-category-carousel {
   position: relative;
   width: min(100%, 620px);
-  min-height: 46px;
+  min-height: 36px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
@@ -87,8 +87,8 @@ body {
   position: absolute;
   top: 50%;
   z-index: 3;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,7 +97,7 @@ body {
   background: #ffffff;
   color: #6f7680;
   cursor: pointer;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 450;
   line-height: 0;
   box-shadow: 0 10px 22px rgba(23, 23, 23, 0.15);
@@ -153,17 +153,17 @@ body {
 
 .launch-category-chip {
   flex: 0 0 auto;
-  min-width: 158px;
-  min-height: 44px;
+  min-width: 142px;
+  min-height: 34px;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   border: 1px solid #dfe4ea;
   border-radius: 8px;
   background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
   color: #020617;
   cursor: pointer;
-  padding: 9px 12px;
+  padding: 6px 10px;
   text-align: left;
   transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -190,7 +190,7 @@ body {
 .launch-category-name {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1.25;
   white-space: nowrap;
@@ -198,8 +198,8 @@ body {
 
 .launch-category-icon {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -1035,9 +1035,9 @@ body {
   }
 
   .category-arrow {
-    width: 36px;
-    height: 36px;
-    font-size: 30px;
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
   }
 
   #categoryPrevBtn {
@@ -1049,13 +1049,13 @@ body {
   }
 
   .launch-category-chip {
-    min-width: 146px;
-    min-height: 42px;
-    padding: 8px 11px;
+    min-width: 132px;
+    min-height: 34px;
+    padding: 6px 9px;
   }
 
   .launch-category-name {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .launch-question-panel {
