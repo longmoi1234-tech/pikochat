@@ -7,7 +7,8 @@ import re
 app = Flask(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_PATH = BASE_DIR / 'data.json'
+DATA_FILE = os.environ.get('PIKOCHAT_DATA_FILE', 'pikonik_refined_faq.json')
+DATA_PATH = BASE_DIR / DATA_FILE
 STOP_WORDS = {
     'a', 'an', 'and', 'are', 'can', 'do', 'does', 'for', 'how', 'i', 'in',
     'is', 'it', 'my', 'of', 'on', 'or', 'should', 'the', 'to', 'what',
@@ -41,7 +42,7 @@ def load_data():
         return data
 
     except FileNotFoundError:
-        print("ERROR: data.json not found")
+        print(f"ERROR: {DATA_FILE} not found")
         return None
 
     except json.JSONDecodeError as e:
@@ -152,7 +153,7 @@ def get_messages():
 
     if not data:
         return jsonify({
-            'error': 'data.json not found or invalid'
+            'error': f'{DATA_FILE} not found or invalid'
         }), 500
 
     return jsonify(data)
@@ -175,7 +176,7 @@ def chat():
 
     if data is None:
         return jsonify({
-            'error': 'Could not load data.json'
+            'error': f'Could not load {DATA_FILE}'
         }), 500
 
     answer = chatbot_response(query, data)

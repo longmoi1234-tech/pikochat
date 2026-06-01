@@ -35,30 +35,47 @@
   </main>
 
   <main id="chatPanel" class="chat-panel is-hidden">
-    <div class="chat-header">
-      <div class="chat-title-row">
-        <button id="backToLaunchBtn" class="back-btn" type="button" aria-label="Back to first screen">&larr;</button>
-        <h1>Pikochat</h1>
-      </div>
-      <div id="statusText" class="status-text">Loading source document...</div>
-    </div>
-
-    <div id="chatWindow" class="chat-window"></div>
-
-    <form id="chatForm" class="chat-form">
-      <div class="input-shell">
-        <input id="userInput" type="text" placeholder="Type or speak a question..." autocomplete="off" />
-        <button id="micBtn" class="mic-btn" type="button" aria-label="Use microphone" title="Use microphone">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z" />
-            <path d="M19 11a7 7 0 0 1-14 0" />
-            <path d="M12 18v3" />
-            <path d="M8 21h8" />
-          </svg>
+    <aside id="historyPanel" class="history-panel" aria-label="Conversation history">
+      <div class="history-topbar">
+        <button id="closeHistoryBtn" class="icon-btn" type="button" aria-label="Close conversations">
+          <span aria-hidden="true">&times;</span>
         </button>
+        <button id="newChatBtn" class="new-chat-btn" type="button">New chat</button>
       </div>
-      <button class="send-btn" type="submit" aria-label="Send">&rarr;</button>
-    </form>
+      <label class="history-search" for="historySearch">
+        <span class="visually-hidden">Search conversation history</span>
+        <input id="historySearch" type="search" placeholder="Search" autocomplete="off" />
+      </label>
+      <div id="historyList" class="history-list" aria-label="Recent Questions"></div>
+    </aside>
+
+    <div id="sidebarScrim" class="sidebar-scrim" aria-hidden="true"></div>
+
+    <section class="chat-shell" aria-label="Pikochat conversation">
+      <header class="chat-header">
+        <button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="Open conversations">
+          <span aria-hidden="true"></span>
+        </button>
+        <button id="backToLaunchBtn" class="back-btn" type="button" aria-label="Back to first screen">&larr;</button>
+        <div class="chat-title-copy">
+          <h1>Pikochat</h1>
+          <span id="statusText" class="status-text">Loading source document...</span>
+        </div>
+      </header>
+
+      <div id="chatWindow" class="chat-window">
+        <section id="emptyState" class="empty-state" aria-label="Suggested questions">
+          <strong>How can I help?</strong>
+        </section>
+      </div>
+
+      <form id="chatForm" class="chat-form">
+        <div class="input-shell">
+          <textarea id="userInput" placeholder="Message Pikochat" autocomplete="off" rows="1"></textarea>
+          <button class="send-btn" type="submit" aria-label="Send message">&uarr;</button>
+        </div>
+      </form>
+    </section>
   </main>
   <script src="script.js"></script>
 </body>

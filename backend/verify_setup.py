@@ -5,8 +5,8 @@ import sys
 
 def main():
     base_dir = Path(__file__).resolve().parent
-    data_path = base_dir / 'data.json'
-    frontend_path = base_dir.parent / 'frontend' / 'index.html'
+    data_path = base_dir / 'pikonik_refined_faq.json'
+    frontend_path = base_dir.parent / 'index.html'
 
     print('Python executable:', sys.executable)
 
@@ -24,9 +24,9 @@ def main():
     try:
         with data_path.open('r', encoding='utf-8') as f:
             json.load(f)
-        print('data.json loaded successfully.')
+        print(f'{data_path.name} loaded successfully.')
     except json.JSONDecodeError as exc:
-        print(f'ERROR: data.json is invalid JSON: {exc}')
+        print(f'ERROR: {data_path.name} is invalid JSON: {exc}')
         return 1
 
     if not frontend_path.exists():
