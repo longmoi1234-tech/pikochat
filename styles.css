@@ -1254,10 +1254,10 @@ body {
 .chat-panel {
   --chat-bg: #ffffff;
   --chat-text: #111111;
-  --chat-muted: #6f6f6f;
-  --chat-subtle: #f4f4f4;
-  --chat-subtle-hover: #ececec;
-  --chat-sidebar: #f7f7f7;
+  --chat-muted: #5f4630;
+  --chat-subtle: #fff1df;
+  --chat-subtle-hover: #ffe3bf;
+  --chat-sidebar: #fff7ed;
   --chat-shadow: 0 18px 60px rgba(0, 0, 0, 0.16);
   position: fixed;
   inset: 0;
@@ -1347,7 +1347,7 @@ body {
 .history-delete-btn:focus-visible,
 .chat-panel .send-btn:focus-visible,
 .chat-panel textarea:focus {
-  outline: 2px solid rgba(16, 163, 127, 0.36);
+  outline: 2px solid rgba(244, 139, 31, 0.34);
   outline-offset: 2px;
 }
 
@@ -1765,10 +1765,10 @@ body {
 .launch-screen {
   --launch-bg: #ffffff;
   --launch-text: #111111;
-  --launch-muted: #6f6f6f;
-  --launch-subtle: #f4f4f4;
-  --launch-subtle-hover: #ececec;
-  --launch-accent: #10a37f;
+  --launch-muted: #5f4630;
+  --launch-subtle: #fff1df;
+  --launch-subtle-hover: #ffe3bf;
+  --launch-accent: #f48b1f;
   position: fixed;
   inset: 0;
   width: 100%;
@@ -1832,7 +1832,7 @@ body {
 .launch-category-chip:focus-visible,
 .category-arrow:focus-visible,
 .launch-question-toggle:focus-visible {
-  outline: 2px solid rgba(16, 163, 127, 0.36);
+  outline: 2px solid rgba(244, 139, 31, 0.34);
   outline-offset: 2px;
 }
 
