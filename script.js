@@ -181,7 +181,7 @@ async function fetchSourceData() {
     const result = await getFaqData();
     faqData = result.faq || [];
     renderLaunchCategories(faqData);
-    setStatus(faqData.length ? 'Backend ready. Ask a question.' : 'Backend ready, but FAQ is empty.');
+    setStatus(faqData.length ? '' : 'FAQ is empty.');
   } catch (error) {
     setStatus(`Failed to load FAQ data: ${error.message}`);
     launchQuestionPanel.innerHTML = '<p class="launch-empty">Could not load categories. Please check that the backend is running.</p>';
@@ -269,7 +269,7 @@ function renderCurrentConversation() {
 
   if (!conversation || !conversation.messages.length) {
     chatWindow.appendChild(emptyState);
-    setStatus(faqData.length ? 'Ready for your question.' : statusText.textContent);
+    setStatus(faqData.length ? '' : statusText.textContent);
     return;
   }
 
