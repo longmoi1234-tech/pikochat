@@ -23,6 +23,13 @@ const HISTORY_STORAGE_KEY = 'pikochat.conversations';
 const ACTIVE_CONVERSATION_KEY = 'pikochat.activeConversationId';
 const SIDEBAR_STATE_KEY = 'pikochat.sidebarOpen';
 const MAX_TEXTAREA_HEIGHT = 180;
+const MIN_REPLY_DELAY_MS = 3000;
+const fallbackSuggestions = [
+  'What is Pikonik?',
+  'Does Pikonik support UPI?',
+  'How to create a bill?',
+  'Cafe management features',
+];
 const stopWords = new Set([
   'a', 'an', 'and', 'are', 'can', 'do', 'does', 'for', 'how', 'i', 'in',
   'is', 'it', 'my', 'of', 'on', 'or', 'should', 'the', 'to', 'what',
@@ -217,7 +224,7 @@ async function submitQuestion(rawQuestion) {
   setStatus('Getting response from chatbot...');
 
   try {
-    const answer = await getChatbotAnswer(question);
+    const answer = await getDelayedChatbotAnswer(question);
     typingIndicator.remove();
     conversation.messages.push({
       role: 'bot',
@@ -248,6 +255,28 @@ async function submitQuestion(rawQuestion) {
   }
 }
 
+async function getDelayedChatbotAnswer(question) {
+  const answerResult = getChatbotAnswer(question).then(
+    (answer) => ({ answer }),
+    (error) => ({ error })
+  );
+
+  await delay(MIN_REPLY_DELAY_MS);
+  const result = await answerResult;
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return result.answer;
+}
+
+function delay(duration) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, duration);
+  });
+}
+
 function setWaitingForAnswer(isWaiting) {
   isWaitingForAnswer = isWaiting;
   userInput.disabled = isWaiting;
@@ -258,9 +287,55 @@ function setWaitingForAnswer(isWaiting) {
 function appendMessage(text, role) {
   const message = document.createElement('div');
   message.className = `message ${role}`;
-  message.textContent = text;
+
+  if (role === 'bot' && isFallbackAnswer(text)) {
+    message.appendChild(createFallbackSuggestionMessage());
+  } else {
+    message.textContent = text;
+  }
+
   chatWindow.appendChild(message);
   scrollToLatest();
+}
+
+function isFallbackAnswer(text) {
+  return String(text).includes('Sorry, I could not understand your question')
+    && String(text).includes('Try asking:');
+}
+
+function createFallbackSuggestionMessage() {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'fallback-suggestions';
+
+  const apology = document.createElement('p');
+  apology.textContent = 'Sorry, I could not understand your question.';
+
+  const prompt = document.createElement('p');
+  prompt.className = 'fallback-suggestions-title';
+  prompt.textContent = 'Try asking:';
+
+  const list = document.createElement('div');
+  list.className = 'fallback-suggestion-list';
+
+  fallbackSuggestions.forEach((suggestion) => {
+    const button = document.createElement('button');
+    button.className = 'fallback-suggestion-btn';
+    button.type = 'button';
+    button.textContent = suggestion;
+    button.addEventListener('click', () => sendSuggestedQuestion(suggestion));
+    list.appendChild(button);
+  });
+
+  wrapper.append(apology, prompt, list);
+  return wrapper;
+}
+
+function sendSuggestedQuestion(question) {
+  if (isWaitingForAnswer) return;
+
+  userInput.value = question;
+  resizeComposer();
+  submitQuestion(question);
 }
 
 function renderCurrentConversation() {
@@ -578,10 +653,7 @@ function getLocalChatbotAnswer(query, faq) {
   return `Sorry, I could not understand your question.
 
 Try asking:
-- What is Pikonik?
-- Does Pikonik support UPI?
-- How to create a bill?
-- Cafe management features`;
+${fallbackSuggestions.map((suggestion) => `- ${suggestion}`).join('\n')}`;
 }
 
 function normalizeText(text) {
